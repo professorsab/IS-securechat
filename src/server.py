@@ -235,7 +235,8 @@ class SecureServer:
             print(f"\n[SERVER] New connection from {addr}")
             
             try:
-                # Phase 1: Certificate exchange
+                
+                #Phase 1: Certificate exchange
                 client_cert, client_pk = self.handle_certificate_exchange(conn)
                 if not client_cert:
                     conn.close()

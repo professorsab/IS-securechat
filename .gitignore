@@ -1,0 +1,24 @@
+cat > .gitignore << 'EOF'
+# Environment
+.env
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Certificates (NEVER COMMIT)
+certs/
+*.pem
+*.key
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+EOF

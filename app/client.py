@@ -203,7 +203,7 @@ class SecureClient:
             print(f"[CLIENT] ✗ {response['msg']}")
             return False
     
-    def login(self, auth_key):
+    def login(self):
         """
         Phase 3b: User Login
         
@@ -217,30 +217,16 @@ class SecureClient:
         email = input("Enter email: ").strip()
         password = getpass("Enter password: ")
         
-        # For login, we need to get the salt from server first
-        # (In production, client might cache this, but for assignment we'll compute directly)
-        salt = os.urandom(16)  # Temporary, server will verify with stored salt
-        pwd_hash = hashlib.sha256(salt + password.encode()).hexdigest()
-        
-        login_data = {
+        # Send PLAIN password (encrypted via AES with auth_key)
+        # Server will retrieve salt and hash
+        auth_data = {
             "type": "login",
             "email": email,
-            "pwd": pwd_hash,
-            "nonce": base64.b64encode(os.urandom(16)).decode()
+            "pwd": password  # Send plain password, NOT hashed
         }
         
-        # Encrypt with auth key
-        encrypted_data = AESCipher.encrypt(
-            json.dumps(login_data).encode(),
-            auth_key
-        )
-        
-        auth_msg = {
-            "type": "auth",
-            "data": base64.b64encode(encrypted_data).decode()
-        }
-        self.socket.send(json.dumps(auth_msg).encode())
-        print("[CLIENT] → Sent encrypted login credentials")
+        encrypted = self.auth_aes.encrypt(json.dumps(auth_data).encode())
+        self.sock.sendall(encrypted)
         
         # Receive response
         response_encrypted = base64.b64decode(self.socket.recv(4096))

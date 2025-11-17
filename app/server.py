@@ -150,7 +150,6 @@ class SecureServer:
             success = self.db.register_user(
                 auth_data['email'],
                 auth_data['username'],
-                base64.b64decode(auth_data['salt']),
                 auth_data['pwd']
             )
             response = {
@@ -182,6 +181,38 @@ class SecureServer:
         print(f"[SERVER] → Sent response: {response['msg']}")
         
         return response['success']
+    
+    def handle_login(self, email, pwd_hash_from_client):
+        """Verify login credentials"""
+        try:
+            cursor = self.db.conn.cursor()
+            
+            # Retrieve stored salt and password hash
+            cursor.execute(
+                "SELECT salt, pwd_hash FROM users WHERE email = %s",
+                (email,)
+            )
+            result = cursor.fetchone()
+            
+            if not result:
+                return {"success": False, "msg": "User not found"}
+            
+            stored_salt, stored_pwd_hash = result
+            
+            # CRITICAL: Client must send password, not hash
+            # Server recomputes hash with stored salt
+            
+            # If client sends plain password:
+            computed_hash = hashlib.sha256(stored_salt + pwd_hash_from_client.encode()).hexdigest()
+            
+            if computed_hash == stored_pwd_hash:
+                return {"success": True, "msg": "Login successful"}
+            else:
+                return {"success": False, "msg": "Invalid password"}
+                
+        except Exception as e:
+            print(f"[DB] Login error: {e}")
+            return {"success": False, "msg": "Login failed"}
     
     def handle_chat_dh(self, conn):
         """Phase 4: DH key exchange for chat session"""
